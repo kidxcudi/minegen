@@ -13,7 +13,7 @@ def parse_output(text):
                 raise ParseError("bad arity")
             if is_var(e[2]):  # a source-code snippet such as (supportOf $pattern $cnt), not a result
                 continue
-            found.append((e[1], int(e[2])))
+            found.append((e[1], int(e[2]), " ".join(f.split())))
         except (ParseError, ValueError):
             errors.append(f"unparseable result: {f[:80]}")
     return found, errors
@@ -32,22 +32,25 @@ def check_case(case, run):
     db = load_atoms("\n".join(case["atoms"]))
     reported, errors = parse_output(text)
     fails += errors
-    seen, forms = {}, {}
-    for pat, n in reported:
+    seen, forms, raws = {}, {}, {}
+    for pat, n, raw in reported:
         key = canon(pat)
         ordered = to_str(_rename(pat, {}))  # alpha-renamed but keeps the miner's clause order
         forms.setdefault(key, []).append(ordered)
+        raws.setdefault(key, []).append(raw)  # exactly as the miner printed it, original variable names
         seen[key] = n
         true = support(pat, db)
         if n != true:
             fails.append(f"support mismatch for {key}: miner says {n}, oracle says {true}")
         if n < case["minsup"]:
             fails.append(f"below minsup: {key} has support {n}, minsup is {case['minsup']}")
+    duplicates = []
     for key, orders in forms.items():
         if len(orders) > 1:
             kind = ("the same clauses in a different order" if len(set(orders)) > 1
                     else "identical up to variable names")
             fails.append(f"duplicate pattern reported {len(orders)}x ({kind}): {key}")
+            duplicates.append({"pattern": key, "kind": kind, "support": seen[key], "copies": raws[key]})
     expected, scope = expected_frequent(db, case["minsup"], case["conj_exp"], case["depth"])
     if scope["completeness"]:
         for key, (_, s) in expected.items():
@@ -69,4 +72,5 @@ def check_case(case, run):
     else:
         verdict = "PASS"
     return {"id": case["id"], "name": case["name"], "verdict": verdict, "failures": fails, "notes": notes,
-            "reported": len(seen), "expected": len(expected) if scope["completeness"] else None}
+            "reported": len(seen), "expected": len(expected) if scope["completeness"] else None,
+            "duplicates": duplicates}
