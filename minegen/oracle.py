@@ -99,10 +99,11 @@ def _rename_apart(p, tag):
 
 
 def _identifications(vp, vq):
-    """All non-empty partial injective maps from Q's variables onto P's variables."""
-    for k in range(1, min(len(vp), len(vq)) + 1):
+    """All non-empty partial maps from Q's variables onto P's variables. Not injective: two of Q's variables
+    may land on one of P's, which is how a clause such as (Ref $x $x) arises from a frequent (Ref $a $b)."""
+    for k in range(1, len(vq) + 1):
         for qs in itertools.combinations(vq, k):
-            for ps in itertools.permutations(vp, k):
+            for ps in itertools.product(vp, repeat=k):
                 yield dict(zip(qs, ps))
 
 
@@ -111,7 +112,7 @@ def conj2_patterns(db, minsup, singles):
     Joins on several shared variables are included (a real run showed the miner reports them)."""
     pats = [p for p, _ in singles.values() if variables(p)]  # a clause with no variable cannot join
     found = {}
-    for p, q in itertools.combinations_with_replacement(pats, 2):
+    for p, q in itertools.product(pats, repeat=2):  # ordered: the map goes from Q onto P only
         P, Q = _rename_apart(p, "a"), _rename_apart(q, "b")
         for mapping in _identifications(variables(P), variables(Q)):
             Q2 = substitute(Q, mapping)

@@ -261,8 +261,7 @@ Where it comes from (a lead from reading the code, not yet tested): it is not th
 candidate lists the miner prints are unique in every case, and the 10 non-conjunction cases have no duplicates.
 In the conjunction stage the same conjunction is built more than once and stored, `unique-atom` compares atoms
 literally so copies with different variable ids survive, and `sort_conj` orders clauses by a global first-seen
-index, so equal conjunctions can differ in their ids or in clause order. See `docs/3_other_things_to_know.md`,
-section 14, for the values and a test of a one-word fix on a copy of the repo.
+index, so equal conjunctions can differ in their ids or in clause order. 
 
 Not done yet:
 
